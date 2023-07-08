@@ -2,10 +2,13 @@ import argparse
 import atexit
 from os import path
 import os
+from dotenv import load_dotenv
 
 from email_backup import EmailBackup
 
 def main():
+    env_path = path.abspath(path.join(path.dirname(__file__), '../.env'))
+    load_dotenv(env_path)
     parser = argparse.ArgumentParser(description='Backup emails from an IMAP server to a local directory.')
     parser.add_argument('--username', required=True, help='The username for the IMAP server.')
     parser.add_argument('--password', required=True, help='The password for the IMAP server.')
