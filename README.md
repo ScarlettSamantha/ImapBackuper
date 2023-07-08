@@ -31,7 +31,7 @@ To run the script, you need to provide your email username and password. The scr
 Here's how to run the script with all arguments:
 
 ```bash
-python email_backup/app.py --username your-email@gmail.com --password your-password --server imap.gmail.com --port 993 --output ./emails
+python email_backup/main.py --username your-email@gmail.com --password your-password --server imap.gmail.com --port 993 --output ./emails
 ```
 
 Replace "your-email@gmail.com" and "your-password" with your actual email and password. Replace "./emails" with the path on your host system where you want to save the emails.
@@ -43,7 +43,7 @@ In daemon mode, the script will continuously monitor the email account for new e
 To run the script in daemon mode, add the `--daemon` argument:
 
 ```bash
-python email_backup/app.py --username your-email@gmail.com --password your-password --server imap.gmail.com --port 993 --output ./emails --daemon
+python email_backup/main.py --username your-email@gmail.com --password your-password --server imap.gmail.com --port 993 --output ./emails --daemon
 ```
 
 ## Docker
@@ -59,7 +59,7 @@ docker build -t email_backup .
 To run the script in a Docker container, run:
 
 ```bash
-docker run -v /path/to/emails:/app/emails email_backup python email_backup/app.py --username your-email@gmail.com --password your-password --server imap.gmail.com --port 993 --output /app/emails
+docker run -v /path/to/emails:/app/emails email_backup python email_backup/main.py --username your-email@gmail.com --password your-password --server imap.gmail.com --port 993 --output /app/emails
 ```
 
 Replace "/path/to/emails" with the path on your host system where you want to save the emails.
@@ -67,7 +67,7 @@ Replace "/path/to/emails" with the path on your host system where you want to sa
 To run the script in daemon mode in a Docker container, add the `--daemon` argument:
 
 ```bash
-docker run -v /path/to/emails:/app/emails email_backup python email_backup/app.py --username your-email@gmail.com --password your-password --server imap.gmail.com --port 993 --output /app/emails --daemon
+docker run -v /path/to/emails:/app/emails email_backup python email_backup/main.py --username your-email@gmail.com --password your-password --server imap.gmail.com --port 993 --output /app/emails --daemon
 ```
 
 ## Docker Compose
