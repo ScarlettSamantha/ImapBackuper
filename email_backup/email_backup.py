@@ -32,6 +32,7 @@ class EmailBackup:
         self.resume = resume
         self.latest_email_id = None
         self._configure_logger()
+        self.logger.info(f"State file path: {self.state_file}")
         self.connect()
         if self.resume:
             self._find_latest_backup()
