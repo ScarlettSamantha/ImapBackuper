@@ -1,4 +1,5 @@
 import email
+import atexit
 import re
 import random
 from email.utils import parsedate_to_datetime
@@ -114,6 +115,7 @@ class EmailBackup:
             # Select the mailbox to backup
             self.mail.select(mailbox)
             self._load_state()
+            atexit.register(self._save_state, args=(self.latest_email_id,))
             i = 0
             while True:
                 self.logger.info(f"Waking up from sleep from iteration{str(i)} going for iteration {str(i+1)} at {datetime.now().isoformat()}")
@@ -136,6 +138,7 @@ class EmailBackup:
 
                 self.logger.info(f"Loop complete {datetime.now().isoformat()}: Iteration {str(i)} going to sleep now for {str(self.sleep_time)}")
                 time.sleep(self.sleep_time)
+            atexit.unregister(func=self._save_state, args=(self.latest_email_id,))
         except Exception as e:
             self.logger.error(f"Failed to backup: {e}")
             raise
