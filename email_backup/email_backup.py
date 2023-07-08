@@ -15,7 +15,7 @@ from chardet.universaldetector import UniversalDetector
 from dateutil.parser import parse
 
 class EmailBackup:
-    def __init__(self, host: str, username: str, password: str, output_dir: str, use_ssl:bool = True, port: int = 993, sleep_time: int = 60) -> None:
+    def __init__(self, host: str, username: str, password: str, output_dir: str, use_ssl:bool = True, port: int = 993, sleep_time: int = 60, resume: bool = True) -> None:
         """
         Initialize the IMAP client and login to the email account.
         """
@@ -27,9 +27,28 @@ class EmailBackup:
         self.output_dir = output_dir
         self.sleep_time = sleep_time
         self.use_ssl = use_ssl
+        self.resume = resume
         self.latest_email_id = None
         self._configure_logger()
         self.connect()
+        if self.resume:
+            self._find_latest_backup()
+
+    def _find_latest_backup(self):
+        """
+        Find the latest backup based on the timestamp in the directory names.
+        """
+        try:
+            # Get a list of all directories in the output directory
+            dirs = [d for d in os.listdir(self.output_dir) if os.path.isdir(os.path.join(self.output_dir, d))]
+            # Parse the timestamps from the directory names and find the latest one
+            timestamps = [datetime.strptime(d.split('_')[0], '%Y-%m-%d_%H-%M-%S') for d in dirs]
+            latest_timestamp = max(timestamps)
+            # Convert the latest timestamp to the format used in email IDs
+            self.latest_email_id = latest_timestamp.strftime('%Y%m%d%H%M%S')
+        except Exception as e:
+            self.logger.error(f"Failed to find the latest backup: {e}")
+            raise
 
     def _configure_logger(self) -> None:
         """
@@ -96,7 +115,7 @@ class EmailBackup:
             self.mail.select(mailbox)
             i = 0
             while True:
-                self.logger.info(f"Waking up from sleep from iteration{i} going for iteration {i+1} at {datetime.now().isoformat()}")
+                self.logger.info(f"Waking up from sleep from iteration{str(i)} going for iteration {str(i+1)} at {datetime.now().isoformat()}")
                 i += 1
                 # Fetch the list of all email IDs
                 _, data = self.mail.uid('search', None, "ALL")
@@ -111,7 +130,7 @@ class EmailBackup:
                     break
                 # In daemon mode, remember the ID of the latest email and wait for a while before the next backup
                 self.latest_email_id = mail_ids[-1]
-                self.logger.info(f"Loop complete {datetime.now().isoformat()}: Iteration {i} going to sleep now for {self.sleep_time}")
+                self.logger.info(f"Loop complete {datetime.now().isoformat()}: Iteration {str(i)} going to sleep now for {str(self.sleep_time)}")
                 time.sleep(self.sleep_time)
         except Exception as e:
             self.logger.error(f"Failed to backup: {e}")
@@ -121,10 +140,10 @@ class EmailBackup:
         """
         Get new mail ids since the last backup.
         """
-        # If this is the first backup, all email IDs are considered new
-        if self.latest_email_id is None:
+        # If resume is False or this is the first backup, all email IDs are considered new
+        if not self.resume or self.latest_email_id is None:
             return mail_ids
-        # If this is not the first backup, only the email IDs that are greater than the latest email ID from the last backup are considered new
+        # If resume is True and this is not the first backup, only the email IDs that are greater than the latest email ID from the last backup are considered new
         latest_email_index = mail_ids.index(self.latest_email_id)
         return mail_ids[latest_email_index + 1:]
 
