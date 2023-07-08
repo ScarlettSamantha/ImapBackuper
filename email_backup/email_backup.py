@@ -213,7 +213,7 @@ class EmailBackup:
                 self.logger.error(f"Failed while writing/creating to file: '{os.path.join(email_dir, filename)}' exception: {e}")
         except Exception as e:
             self.logger.error(f"Failed to backup email attachment part: {part_num}. Exception: {e}")
-        self.logger.info(f"Finished fownloading attachment part: {part_num}")
+        self.logger.info(f"Finished fownloading attachment part: {file_name}")
 
 
     def close(self) -> None:
