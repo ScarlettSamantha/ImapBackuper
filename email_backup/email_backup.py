@@ -27,7 +27,7 @@ class EmailBackup:
         self.mail = None
         self.output_dir = output_dir
         self.sleep_time = sleep_time
-        self.state_file = os.path.abspath(os.path.join(os.path.dirname(__file__) + '/../.statefile'))
+        self.state_file = os.path.abspath(os.path.join(os.path.dirname(__file__) + '.statefile'))
         self.use_ssl = use_ssl
         self.resume = resume
         self.latest_email_id = None
@@ -150,6 +150,8 @@ class EmailBackup:
             return
 
     def _save_state(self, latest_email_id):
+        if not os.path.exists(os.path.dirname(self.state_file)):
+            os.makedirs(os.path.dirname(self.state_file), exist_ok=True)
         with open(self.state_file, 'w') as f:
             f.write(latest_email_id.decode())
             self.logger.info(f"State found saving: {latest_email_id.decode()} in file: {self.state_file}")
