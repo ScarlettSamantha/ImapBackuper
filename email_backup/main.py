@@ -2,7 +2,7 @@ import argparse
 import atexit
 from os import path
 
-from email_backup import EmailBackup
+from .email_backup import EmailBackup
 
 def main():
     parser = argparse.ArgumentParser(description='Backup emails from an IMAP server to a local directory.')
