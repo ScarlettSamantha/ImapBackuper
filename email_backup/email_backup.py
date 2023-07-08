@@ -27,7 +27,7 @@ class EmailBackup:
         self.mail = None
         self.output_dir = output_dir
         self.sleep_time = sleep_time
-        self.state_file = os.path.abspath(os.path.join(os.path.dirname(__file__) + '../.statefile'))
+        self.state_file = os.path.abspath(os.path.join(os.path.dirname(__file__) + '/../.statefile'))
         self.use_ssl = use_ssl
         self.resume = resume
         self.latest_email_id = None
