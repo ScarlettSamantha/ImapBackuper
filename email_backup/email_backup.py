@@ -94,7 +94,10 @@ class EmailBackup:
         try:
             # Select the mailbox to backup
             self.mail.select(mailbox)
+            i = 0
             while True:
+                self.logger.info(f"Waking up from sleep from iteration{i} going for iteration {i+1} at {datetime.now().isoformat()}")
+                i += 1
                 # Fetch the list of all email IDs
                 _, data = self.mail.uid('search', None, "ALL")
                 mail_ids = data[0].split()
@@ -108,6 +111,7 @@ class EmailBackup:
                     break
                 # In daemon mode, remember the ID of the latest email and wait for a while before the next backup
                 self.latest_email_id = mail_ids[-1]
+                self.logger.info(f"Loop complete {datetime.now().isoformat()}: Iteration {i} going to sleep now for {self.sleep_time}")
                 time.sleep(self.sleep_time)
         except Exception as e:
             self.logger.error(f"Failed to backup: {e}")

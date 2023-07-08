@@ -3,5 +3,6 @@ services:
   email_backup:
     build: .
     volumes:
+      - ./logs:/app/logs
       - ./emails:/app/emails
-    command: ["python", "-m", "email_backup.app", "--username", "your-email@gmail.com", "--password", "your-password", "--daemon"]
+    command: ["python3", "email_backup/main.py", "--username", "", "--password", "", "--server", "", "--daemon"]
