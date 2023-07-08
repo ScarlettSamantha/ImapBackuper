@@ -114,7 +114,7 @@ class EmailBackup:
         try:
             # Select the mailbox to backup
             self.mail.select(mailbox)
-            self._load_state()
+            self.latest_email_id = self._load_state()
             atexit.register(self._save_state, args=(self.latest_email_id,))
             i = 0
             while True:
@@ -147,17 +147,14 @@ class EmailBackup:
             return
 
     def _save_state(self, datetime):
-        state_file = os.path.join(self.output_dir, '.state.tmp')
-        with open(state_file, 'w') as f:
-            f.write(datetime.isoformat())
+        with open(self.state_file, 'w') as f:
+            f.write(latest_email_id.decode())
 
     def _load_state(self):
-        state_file = os.path.join(self.output_dir, '.state.tmp')
-        self.logger.info(f"Attempted loadstate from {state_file}")
-        if os.path.exists(state_file):
-            with open(state_file, 'r') as f:
-                datetime_str = f.read()
-                return parse(datetime_str)
+
+        if os.path.exists(self.state_file):
+            with open(self.state_file, 'r') as f:
+                return f.read().strip()
         return None
 
     def _get_new_mail_ids(self, mail_ids: list) -> list:
