@@ -130,6 +130,7 @@ class EmailBackup:
                 new_mail_ids = self._get_new_mail_ids(mail_ids)
                 for i in new_mail_ids:
                     # Backup each new email
+                    self.latest_email_id = i
                     self._backup_email(i)
                 if not daemon:
                     # If not in daemon mode, break the loop after the first backup
@@ -149,7 +150,6 @@ class EmailBackup:
             return
 
     def _save_state(self, latest_email_id):
-
         with open(self.state_file, 'w') as f:
             f.write(latest_email_id.decode())
             self.logger.info(f"State found saving: {latest_email_id.decode()} in file: {self.state_file}")
@@ -194,6 +194,7 @@ class EmailBackup:
             raw_email = raw_email_data.decode(encoding)
             # Parse the raw email to get the email message
             email_message = email.message_from_string(raw_email)
+            self.latest_email_id = email_message.i
 
             # Decode the subject of the email
             subject = decode_header(email_message['Subject'])[0][0]
