@@ -113,6 +113,7 @@ class EmailBackup:
         try:
             # Select the mailbox to backup
             self.mail.select(mailbox)
+            self._load_state()
             i = 0
             while True:
                 self.logger.info(f"Waking up from sleep from iteration{str(i)} going for iteration {str(i+1)} at {datetime.now().isoformat()}")
@@ -121,7 +122,7 @@ class EmailBackup:
                 _, data = self.mail.uid('search', None, "ALL")
                 mail_ids = data[0].split()
                 # Get the list of new email IDs since the last backup
-                self._load_state()
+               
                 new_mail_ids = self._get_new_mail_ids(mail_ids)
                 for i in new_mail_ids:
                     # Backup each new email
@@ -131,9 +132,7 @@ class EmailBackup:
                     break
                 # In daemon mode, remember the ID of the latest email and wait for a while before the next backup
                 if daemon:
-                    _, data = self.mail.uid('fetch', self.latest_email_id, '(BODY.PEEK[HEADER.FIELDS (DATE)])')
-                    mail_datetime = parse(data[0][1].decode().strip())
-                    self._save_state(mail_datetime)
+                    self._save_state(self.latest_email_id)
 
                 self.logger.info(f"Loop complete {datetime.now().isoformat()}: Iteration {str(i)} going to sleep now for {str(self.sleep_time)}")
                 time.sleep(self.sleep_time)
