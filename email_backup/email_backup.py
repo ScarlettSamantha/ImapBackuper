@@ -129,21 +129,35 @@ class EmailBackup:
                     # If not in daemon mode, break the loop after the first backup
                     break
                 # In daemon mode, remember the ID of the latest email and wait for a while before the next backup
-                self.latest_email_id = mail_ids[-1]
+                if daemon:
+                    _, data = self.mail.uid('fetch', self.latest_email_id, '(BODY.PEEK[HEADER.FIELDS (DATE)])')
+                    mail_datetime = parse(data[0][1].decode().strip())
+                    self._save_state(mail_datetime)
+
                 self.logger.info(f"Loop complete {datetime.now().isoformat()}: Iteration {str(i)} going to sleep now for {str(self.sleep_time)}")
                 time.sleep(self.sleep_time)
         except Exception as e:
             self.logger.error(f"Failed to backup: {e}")
             raise
 
+    def _save_state(self, datetime):
+        state_file = os.path.join(self.output_dir, '.state.tmp')
+        with open(state_file, 'w') as f:
+            f.write(datetime.isoformat())
+
+    def _load_state(self):
+        state_file = os.path.join(self.output_dir, '.state.tmp')
+        if os.path.exists(state_file):
+            with open(state_file, 'r') as f:
+                datetime_str = f.read()
+                return parse(datetime_str)
+        return None
+
     def _get_new_mail_ids(self, mail_ids: list) -> list:
-        """
-        Get new mail ids since the last backup.
-        """
-        # If resume is False or this is the first backup, all email IDs are considered new
-        if not self.resume or self.latest_email_id is None:
+        # If this is the first backup, all email IDs are considered new
+        if self.latest_email_id is None:
             return mail_ids
-        # If resume is True and this is not the first backup, only the email IDs that are greater than the latest email ID from the last backup are considered new
+        # If this is not the first backup, only the email IDs that are greater than the latest email ID from the last backup are considered new
         latest_email_index = mail_ids.index(self.latest_email_id)
         return mail_ids[latest_email_index + 1:]
 
