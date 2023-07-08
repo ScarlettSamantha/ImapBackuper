@@ -121,6 +121,7 @@ class EmailBackup:
                 _, data = self.mail.uid('search', None, "ALL")
                 mail_ids = data[0].split()
                 # Get the list of new email IDs since the last backup
+                self._load_state()
                 new_mail_ids = self._get_new_mail_ids(mail_ids)
                 for i in new_mail_ids:
                     # Backup each new email
@@ -147,6 +148,7 @@ class EmailBackup:
 
     def _load_state(self):
         state_file = os.path.join(self.output_dir, '.state.tmp')
+        self.logger.info(f"Attempted loadstate from {state_file}")
         if os.path.exists(state_file):
             with open(state_file, 'r') as f:
                 datetime_str = f.read()
