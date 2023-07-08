@@ -1,6 +1,7 @@
 import argparse
 import atexit
 from os import path
+import os
 
 from .email_backup import EmailBackup
 
@@ -24,4 +25,6 @@ def main():
     backup.backup(args.imap_import_folder, args.daemon)
     
 if __name__ == "__main__":
+    if os.getenv('DAEMON').lower() == 'true':
+        os.sys.argv.append('--daemon')
     main()
