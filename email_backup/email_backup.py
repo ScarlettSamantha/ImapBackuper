@@ -139,6 +139,9 @@ class EmailBackup:
         except Exception as e:
             self.logger.error(f"Failed to backup: {e}")
             raise
+        except KeyboardInterrupt as e:
+            self._save_state(self.latest_email_id)
+            return
 
     def _save_state(self, datetime):
         state_file = os.path.join(self.output_dir, '.state.tmp')
