@@ -147,14 +147,17 @@ class EmailBackup:
             self._save_state(self.latest_email_id)
             return
 
-    def _save_state(self, datetime):
+    def _save_state(self, latest_email_id):
+
         with open(self.state_file, 'w') as f:
             f.write(latest_email_id.decode())
+            self.logger.info(f"State found saving: {latest_email_id.decode()} in file: {self.state_file}")
 
     def _load_state(self):
-
+        self.logger.info(f"Loading state")
         if os.path.exists(self.state_file):
             with open(self.state_file, 'r') as f:
+                self.logger.info(f"State loadable loaded id: {f.read().strip()}")
                 return f.read().strip()
         return None
 
