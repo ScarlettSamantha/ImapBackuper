@@ -5,4 +5,4 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./emails:/app/emails
-    command: ["python3", "email_backup/main.py", "--username", "", "--password", "", "--server", "", "--daemon"]
+    command: ["python3", "email_backup/main.py", "--username", "${USERNAME}", "--password", "${PASSWORD}", "--server", "${SERVER}", "--daemon", "${DAEMON}"]
