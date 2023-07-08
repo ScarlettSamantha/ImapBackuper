@@ -1,0 +1,7 @@
+ersion: '3.8'
+services:
+  email_backup:
+    build: .
+    volumes:
+      - ./emails:/app/emails
+    command: ["python", "-m", "email_backup.app", "--username", "your-email@gmail.com", "--password", "your-password", "--daemon"]

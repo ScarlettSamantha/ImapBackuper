@@ -1,0 +1,11 @@
+[Unit]
+Description=Email Backup Service
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/python -m email_backup.app --username your-email@gmail.com --password your-password --daemon
+WorkingDirectory=/path/to/email_backup
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
