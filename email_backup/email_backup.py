@@ -182,7 +182,10 @@ class EmailBackup:
             self.logger.info(f"Backing up email with subject: {subject}")
 
             # Get the date and time of sending the email
-            _datetime = parse(email_message['Date'])
+            date_string = email_message['Date']
+            # Remove the timezone description from the date string
+            date_string = re.sub(r'\(.*\)', '', date_string)
+            _datetime = parse(date_string)
 
             # Create a directory for the email using the subject and date
             # Replace invalid characters in the subject
