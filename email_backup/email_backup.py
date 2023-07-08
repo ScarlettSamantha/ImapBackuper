@@ -194,7 +194,6 @@ class EmailBackup:
             raw_email = raw_email_data.decode(encoding)
             # Parse the raw email to get the email message
             email_message = email.message_from_string(raw_email)
-            self.latest_email_id = email_message.i
 
             # Decode the subject of the email
             subject = decode_header(email_message['Subject'])[0][0]
