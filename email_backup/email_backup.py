@@ -117,10 +117,10 @@ class EmailBackup:
             # Select the mailbox to backup
             self.mail.select(mailbox)
             self.latest_email_id = self._load_state()
-            atexit.register(self._save_state, args=(self.latest_email_id,))
+            atexit.register(self._save_state, self.latest_email_id)
             i = 0
             while True:
-                self.logger.info(f"Waking up from sleep from iteration{str(i)} going for iteration {str(i+1)} at {datetime.now().isoformat()}")
+                self.logger.info(f"Waking up from sleep from iteration {i.decode()} going for iteration {str(i+1)} at {datetime.now().isoformat()}")
                 i += 1
                 # Fetch the list of all email IDs
                 _, data = self.mail.uid('search', None, "ALL")
