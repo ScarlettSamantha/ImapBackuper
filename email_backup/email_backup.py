@@ -136,8 +136,7 @@ class EmailBackup:
                     # If not in daemon mode, break the loop after the first backup
                     break
                 # In daemon mode, remember the ID of the latest email and wait for a while before the next backup
-                if self.daemon:
-                    self._save_state(self.latest_email_id)
+                self._save_state(self.latest_email_id)
 
                 self.logger.info(f"Loop complete {datetime.now().isoformat()}: Iteration {str(_i)} going to sleep now for {str(self.sleep_time)}")
                 time.sleep(self.sleep_time)
@@ -162,6 +161,9 @@ class EmailBackup:
         if os.path.exists(self.state_file):
             with open(self.state_file, 'r') as f:
                 state = f.read().strip()
+                if state in ('', ' '):
+                    self.logger.info(f"State empty setting state to 0")
+                    state = 0
                 self.logger.info(f"State loadable loaded id: {str(state)}")
                 return state
         return None
