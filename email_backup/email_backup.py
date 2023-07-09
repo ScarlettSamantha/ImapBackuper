@@ -1,5 +1,6 @@
 import email
 import atexit
+import traceback
 import re
 import random
 from email.utils import parsedate_to_datetime
@@ -14,6 +15,7 @@ from email.header import decode_header
 from email import message
 from chardet.universaldetector import UniversalDetector
 from dateutil.parser import parse
+from typing import List
 
 class EmailBackup:
     def __init__(self, host: str, username: str, password: str, output_dir: str, use_ssl:bool = True, port: int = 993, sleep_time: int = 60, resume: bool = True) -> None:
@@ -106,8 +108,22 @@ class EmailBackup:
                 self.logger.info(f"Waking up from sleep from iteration {str(_i)} going for iteration {str(_i+1)} at {datetime.now().isoformat()}")
                 _i += 1
                 # Fetch the list of all email IDs
-                _, data = self.mail.uid('search', None, "ALL")
-                mail_ids = data[0].split()
+                # Get the latest email ID from the state
+                latest_email_id = self._load_state()
+
+                # If there is a latest email ID, fetch emails after that ID
+                if latest_email_id is not None:
+                    _, data = self.mail.uid('fetch', f'{int(latest_email_id) + 1}:*', '(BODY.PEEK[])')
+                else:
+                    # If there is no latest email ID, fetch all emails
+                    _, data = self.mail.uid('fetch', '1:*', '(BODY.PEEK[])')
+
+                # Extract the email IDs from the data
+                mail_ids = []
+                for response_part in data:
+                    if isinstance(response_part, tuple):
+                        mail_ids.append(response_part[0].decode('utf-8'))
+
                 if self.daemon:
                     self.latest_email_id = self._load_state()
                 # Get the list of new email IDs since the last backup
@@ -127,7 +143,8 @@ class EmailBackup:
                 time.sleep(self.sleep_time)
             atexit.unregister(self._save_state, self.latest_email_id)
         except Exception as e:
-            self.logger.error(f"Failed to backup: {e}")
+            self.logger.error(f"Failed to backup email: {e}")
+            self.logger.error(traceback.format_exc())
             raise
         except KeyboardInterrupt as e:
             self._save_state(self.latest_email_id)
@@ -145,27 +162,24 @@ class EmailBackup:
         if os.path.exists(self.state_file):
             with open(self.state_file, 'r') as f:
                 state = f.read().strip()
-                self.logger.info(f"State loadable loaded id: {state}")
+                self.logger.info(f"State loadable loaded id: {str(state)}")
                 return state
         return None
 
 
-    def _get_new_mail_ids(self, mail_ids: list) -> list:
-        # If this is the first backup, all email IDs are considered new
-        if self.latest_email_id in (None, '') or self.latest_email_id.__len__() == 0 or self.resume == False:
-            self.logger.info(f"Email state resume {str(self.resume)} with id {str(self.latest_email_id)}")
-            return mail_ids
-        # If this is not the first backup, only the email IDs that are greater than the latest email ID from the last backup are considered new
-        
+    def _get_new_mail_ids(self, mail_ids: List[str]) -> List[str]:
+        """
+        Get the list of new email IDs since the last backup.
+        """
         new_mail_ids = []
-        for mail_id in reversed(mail_ids):
-            if int(mail_id) == int(self.latest_email_id):
-                break
-            new_mail_ids.append(int(mail_id))
-        # Since we iterated in reverse order, we need to reverse the new mail IDs to maintain the original order
-        new_mail_ids.reverse()
+        for mail_id in mail_ids:
+            # Extract the email ID from the fetch command response
+            uid_match = re.search(r'UID (\d+)', mail_id)
+            if uid_match:
+                uid = uid_match.group(1)
+                if int(uid) > int(self.latest_email_id):
+                    new_mail_ids.append(uid)
         return new_mail_ids
-
 
     def _backup_email(self, i: str) -> None:
         """
@@ -173,7 +187,7 @@ class EmailBackup:
         """
         try:
             # Fetch the raw email by ID
-            _, data = self.mail.uid('fetch', i, '(BODY.PEEK[])')
+            _, data = self.mail.uid('fetch', str(i), '(BODY.PEEK[])')
             raw_email_data = data[0][1]
 
             # Detect the encoding of the raw email data
@@ -222,6 +236,7 @@ class EmailBackup:
                     self._backup_attachment(part, email_dir, part_iteration_counter)
         except Exception as e:
             self.logger.error(f"Failed to backup email: {e}")
+            self.logger.error(traceback.format_exc())
 
     def _backup_attachment(self, part: message.Message, email_dir: str, part_num: int) -> None:
         try:
