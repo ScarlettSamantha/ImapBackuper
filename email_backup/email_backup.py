@@ -27,31 +27,14 @@ class EmailBackup:
         self.mail = None
         self.output_dir = output_dir
         self.sleep_time = sleep_time
-        self.state_file = os.path.abspath(os.path.join(os.path.dirname(__file__) + '.statefile'))
+        self.state_file = os.path.abspath(os.path.join(os.path.dirname(__file__), './state'))
         self.use_ssl = use_ssl
         self.resume = resume
         self.latest_email_id = None
+        self.daemon = False
         self._configure_logger()
         self.logger.info(f"State file path: {self.state_file}")
         self.connect()
-        if self.resume:
-            self._find_latest_backup()
-
-    def _find_latest_backup(self):
-        """
-        Find the latest backup based on the timestamp in the directory names.
-        """
-        try:
-            # Get a list of all directories in the output directory
-            dirs = [d for d in os.listdir(self.output_dir) if os.path.isdir(os.path.join(self.output_dir, d))]
-            # Parse the timestamps from the directory names and find the latest one
-            timestamps = [datetime.strptime(d.split('_')[0], '%Y-%m-%d_%H-%M-%S') for d in dirs]
-            latest_timestamp = max(timestamps)
-            # Convert the latest timestamp to the format used in email IDs
-            self.latest_email_id = latest_timestamp.strftime('%Y%m%d%H%M%S')
-        except Exception as e:
-            self.logger.error(f"Failed to find the latest backup: {e}")
-            raise
 
     def _configure_logger(self) -> None:
         """
@@ -116,30 +99,31 @@ class EmailBackup:
         try:
             # Select the mailbox to backup
             self.mail.select(mailbox)
-            self.latest_email_id = self._load_state()
+            self.daemon = daemon
             atexit.register(self._save_state, self.latest_email_id)
-            i = 0
+            _i = 0
             while True:
-                self.logger.info(f"Waking up from sleep from iteration {str(i)} going for iteration {str(i+1)} at {datetime.now().isoformat()}")
-                i += 1
+                self.logger.info(f"Waking up from sleep from iteration {str(_i)} going for iteration {str(_i+1)} at {datetime.now().isoformat()}")
+                _i += 1
                 # Fetch the list of all email IDs
                 _, data = self.mail.uid('search', None, "ALL")
                 mail_ids = data[0].split()
+                if self.daemon:
+                    self.latest_email_id = self._load_state()
                 # Get the list of new email IDs since the last backup
-               
                 new_mail_ids = self._get_new_mail_ids(mail_ids)
                 for i in new_mail_ids:
                     # Backup each new email
                     self.latest_email_id = i
                     self._backup_email(i)
-                if not daemon:
+                if not self.daemon:
                     # If not in daemon mode, break the loop after the first backup
                     break
                 # In daemon mode, remember the ID of the latest email and wait for a while before the next backup
-                if daemon:
+                if self.daemon:
                     self._save_state(self.latest_email_id)
 
-                self.logger.info(f"Loop complete {datetime.now().isoformat()}: Iteration {str(i)} going to sleep now for {str(self.sleep_time)}")
+                self.logger.info(f"Loop complete {datetime.now().isoformat()}: Iteration {str(_i)} going to sleep now for {str(self.sleep_time)}")
                 time.sleep(self.sleep_time)
             atexit.unregister(self._save_state, self.latest_email_id)
         except Exception as e:
@@ -154,23 +138,33 @@ class EmailBackup:
             os.makedirs(os.path.dirname(self.state_file), exist_ok=True)
         with open(self.state_file, 'w') as f:
             f.write(str(latest_email_id))
-            self.logger.info(f"State found saving: {str(self.latest_email_id}) in file: {self.state_file}")
+            self.logger.info(f"State found saving: {str(self.latest_email_id)} in file: {self.state_file}")
 
     def _load_state(self):
         self.logger.info(f"Loading state")
         if os.path.exists(self.state_file):
             with open(self.state_file, 'r') as f:
-                self.logger.info(f"State loadable loaded id: {f.read().strip()}")
-                return f.read().strip()
+                state = f.read().strip()
+                self.logger.info(f"State loadable loaded id: {state}")
+                return state
         return None
+
 
     def _get_new_mail_ids(self, mail_ids: list) -> list:
         # If this is the first backup, all email IDs are considered new
-        if self.latest_email_id is None:
+        if self.latest_email_id in (None, '') or self.latest_email_id.__len__() == 0 or self.resume == False:
+            self.logger.info(f"Email state resume {str(self.resume)} with id {str(self.latest_email_id)}")
             return mail_ids
         # If this is not the first backup, only the email IDs that are greater than the latest email ID from the last backup are considered new
-        latest_email_index = mail_ids.index(self.latest_email_id)
-        return mail_ids[latest_email_index + 1:]
+        
+        new_mail_ids = []
+        for mail_id in reversed(mail_ids):
+            if int(mail_id) == int(self.latest_email_id):
+                break
+            new_mail_ids.append(int(mail_id))
+        # Since we iterated in reverse order, we need to reverse the new mail IDs to maintain the original order
+        new_mail_ids.reverse()
+        return new_mail_ids
 
 
     def _backup_email(self, i: str) -> None:

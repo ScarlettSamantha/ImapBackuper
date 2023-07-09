@@ -17,6 +17,9 @@ __pycache__/
 logs/
 *.log
 email_backup/emails
+email_backup/state
+emails/
+state
 
 # C extensions
 *.so
