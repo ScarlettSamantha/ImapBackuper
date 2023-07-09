@@ -153,7 +153,7 @@ class EmailBackup:
         if not os.path.exists(os.path.dirname(self.state_file)):
             os.makedirs(os.path.dirname(self.state_file), exist_ok=True)
         with open(self.state_file, 'w') as f:
-            f.write(latest_email_id)
+            f.write(str(latest_email_id))
             self.logger.info(f"State found saving: {latest_email_id.decode()} in file: {self.state_file}")
 
     def _load_state(self):
